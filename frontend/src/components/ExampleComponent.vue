@@ -14,7 +14,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import { Todo, Meta } from './models';
+import { Todo, Meta } from '../apollo/models';
 
 interface Props {
   title: string;

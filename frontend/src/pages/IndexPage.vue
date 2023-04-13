@@ -11,7 +11,7 @@
 </template>
 
 <script setup lang="ts">
-import { Todo, Meta } from 'components/models';
+import { Todo, Meta } from 'src/apollo/models.js';
 import ExampleComponent from 'components/ExampleComponent.vue';
 import { ref } from 'vue';
 import Auth from 'src/components/AuthComponent.vue';

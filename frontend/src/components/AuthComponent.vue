@@ -37,31 +37,56 @@
         flat
         class="q-ml-sm"
       ></q-btn>
+      <q-btn label="Кукисы" color="primary" flat @click="cookiesCheck"></q-btn>
     </div>
   </q-form>
 </template>
 
 <script setup lang="ts">
-import { useQuasar } from 'quasar';
-import { ref } from 'vue';
 
-const $q = useQuasar();
+import { Cookies, Notify } from 'quasar';
+import { useApolloClient } from '@vue/apollo-composable'
+import { ref } from 'vue';
+import gql from 'graphql-tag';
+import { AuthPayload } from 'src/apollo/models';
+import { ApolloError } from '@apollo/client/errors';
+import { useRouter } from 'vue-router';
+
+const router = useRouter();
 
 const isPwd = ref(true);
-const name = ref(null);
-const password = ref(null);
+const name = ref('');
+const password = ref('');
+
+const {resolveClient} = useApolloClient<AuthPayload>()
+
+
+const cookiesCheck =  () => {
+  Notify.create({color: 'neutral', textColor: 'white', message: JSON.stringify(Cookies.getAll()), multiLine: true})
+  router.push({name:'index'})
+}
 
 const onSubmit = () => {
-    $q.notify({
-      color: 'green-4',
-      textColor: 'white',
-      icon: 'cloud_done',
-      message: 'Ок',
-    });
+  const client = resolveClient()
+  client.mutate({mutation: gql`mutation Auth ($login: String!, $password: String!) {
+    auth {
+        login(login: $login, password: $password) {
+            user {
+                id
+              	login
+            }
+        }
+    }
+}`, variables: {login: name.value, password: password.value}}).then((result)=> {
+  Notify.create({color:'positive', textColor: 'white', icon: 'cloud_done',message:'Ok'})
+  router.push({name: 'index'})
+},(reason: ApolloError) => {
+  Notify.create({color:'negative', textColor: 'white', icon: 'cloud_done',message: reason.message})
+})
 };
 
 const onReset = () => {
-  name.value = null;
-  password.value = null;
+  name.value = '';
+  password.value = '';
 };
 </script>
