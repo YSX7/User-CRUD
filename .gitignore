@@ -1,1 +1,7 @@
 package-lock.json
+.idea/
+.vscode/
+proto/
+buf/
+frontend/package-lock.json
+frontend/.vscode/
