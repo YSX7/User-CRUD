@@ -2,29 +2,51 @@ directive @goField(forceResolver: Boolean, name: String) on FIELD_DEFINITION | I
 
 directive @auth on FIELD_DEFINITION
 
+enum Role{
+  ADMIN
+  USER
+}
 
 type User {
   id: ID!
   login: String!
+  role: Role!
+}
+
+input NewUser{
+  login: String!
+  role: Role!
+}
+
+input UpdateUser{
+  id: ID!
+  login: String!
+  role: Role!
 }
 
 type AuthInfo{
-  token: String
+  token: String!
 }
 
 type AuthPayload {
-  user: User
-  info: AuthInfo
+  user: User!
+  info: AuthInfo!
 }
 
 type Mutation{
-  auth: AuthOps!
+  login(login: String!, password: String!): AuthPayload @goField(forceResolver: true)
+  validate: User @auth
+  logout(login: String!): String @auth
+  users: UsersMutation
+}
+
+type UsersMutation{
+  new(users: [NewUser!]!): [User!]! @auth
+  update(users: [UpdateUser!]!): [User!]! @auth
+  delete(users: [ID!]!): [ID!]! @auth
 }
 
 type Query{
   me(login: String!): User @auth
-}
-
-type AuthOps {
-  login(login: String!, password: String!): AuthPayload @goField(forceResolver: true)
+  users: [User!] @auth
 }
