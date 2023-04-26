@@ -1,0 +1,16 @@
+input NewUserInput{
+    login: String!
+    role: Role!
+}
+
+input UpdateUserInput{
+    id: ID!
+    login: String!
+    role: Role!
+}
+
+extend type Mutation{
+    userNew(users: [NewUserInput!]!): [User!]! @auth
+    userUpdate(users: [UpdateUserInput!]!): [User!]! @auth
+    userDelete(users: [ID!]!): [ID!]! @auth
+}

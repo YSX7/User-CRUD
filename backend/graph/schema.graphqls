@@ -13,16 +13,6 @@ type User {
   role: Role!
 }
 
-input NewUser{
-  login: String!
-  role: Role!
-}
-
-input UpdateUser{
-  id: ID!
-  login: String!
-  role: Role!
-}
 
 type AuthInfo{
   token: String!
@@ -37,13 +27,6 @@ type Mutation{
   login(login: String!, password: String!): AuthPayload @goField(forceResolver: true)
   validate: User @auth
   logout(login: String!): String @auth
-  users: UsersMutation
-}
-
-type UsersMutation{
-  new(users: [NewUser!]!): [User!]! @auth
-  update(users: [UpdateUser!]!): [User!]! @auth
-  delete(users: [ID!]!): [ID!]! @auth
 }
 
 type Query{
