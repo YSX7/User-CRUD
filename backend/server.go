@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
 
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/handler/transport"
@@ -11,13 +12,19 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/gorilla/websocket"
 	"github.com/rs/cors"
+	"golang.org/x/net/context"
 	"vuegolang/graph"
 	"vuegolang/pkg/middleware"
+	"vuegolang/pkg/sessions"
 )
 
 const defaultPort = "8080"
 
 func main() {
+	var ()
+
+	log.SetFlags(log.Lshortfile)
+
 	db := InitDb()
 	defer db.Close()
 
@@ -58,15 +65,54 @@ func main() {
 
 	resolver := &graph.Resolver{
 		Db:       db,
-		Sessions: graph.Sessions{},
+		Sessions: sessions.New(),
 	}
 
 	graphConfig := graph.Config{
 		Resolvers: resolver,
 	}
 	graphConfig.Directives.Auth = resolver.Auth
+	srv := CreateServer(graphConfig)
+
+	router.Handle("/", playground.Handler("GraphQL playground", "/query"))
+	router.Handle("/query", srv)
+
+	log.Printf("connect to http://localhost:%s/ for GraphQL playground", port)
+	httpSrv := http.Server{Addr: ":" + port, Handler: router}
+
+	idleConnsClosed := make(chan struct{})
+	go func() {
+		sigint := make(chan os.Signal, 1)
+		signal.Notify(sigint, os.Interrupt)
+		<-sigint
+		log.Print("Shutting down application...")
+
+		// We received an interrupt signal, shut down.
+		if errShutdown := httpSrv.Shutdown(context.Background()); errShutdown != nil {
+			// Error from closing listeners, or context timeout:
+			log.Printf("HTTP server Shutdown: %v", errShutdown)
+		}
+		close(idleConnsClosed)
+	}()
+
+	if errListen := httpSrv.ListenAndServe(); errListen != http.ErrServerClosed {
+		// Error starting or closing listener:
+		log.Fatalf("HTTP server ListenAndServe: %v", errListen)
+	}
+
+	// log.Printf("connect to http://localhost:%s/ for GraphQL playground", port)
+	// log.Fatal(http.ListenAndServe(":"+port, router))
+
+	// Block current goroutine until shutdown
+	<-idleConnsClosed
+
+	// Received OS signal: syscall.SIGTERM or syscall.SIGINT
+	log.Print("Shutting down application...")
+}
+
+func CreateServer(config graph.Config) *handler.Server {
 	srv := handler.NewDefaultServer(
-		graph.NewExecutableSchema(graphConfig),
+		graph.NewExecutableSchema(config),
 	)
 	srv.AddTransport(
 		&transport.Websocket{
@@ -80,10 +126,5 @@ func main() {
 			},
 		},
 	)
-
-	router.Handle("/", playground.Handler("GraphQL playground", "/query"))
-	router.Handle("/query", srv)
-
-	log.Printf("connect to http://localhost:%s/ for GraphQL playground", port)
-	log.Fatal(http.ListenAndServe(":"+port, router))
+	return srv
 }
