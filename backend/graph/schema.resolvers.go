@@ -122,9 +122,7 @@ func (r *queryResolver) Me(ctx context.Context, login string) (*model.User, erro
 func (r *queryResolver) Users(ctx context.Context) ([]*model.User, error) {
 	dbUsers := []*model.User{}
 	query := r.Db.NewSelect().Model(&dbUsers)
-	// .ColumnExpr(
-	// 	"\"user\".id, \"user\".login, myroles.name as Role",
-	// ).Join("JOIN roles as myroles ON myroles.id = \"user\".\"role\"")
+
 	errScan := query.Scan(ctx)
 	if errScan != nil {
 		log.Println(errScan)
