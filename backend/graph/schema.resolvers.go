@@ -7,30 +7,29 @@ package graph
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log"
 	"net/http"
 
-	"github.com/uptrace/bun"
-	"golang.org/x/crypto/bcrypt"
+	"vuegolang/dbmodels"
 	"vuegolang/graph/model"
-	"vuegolang/models"
-	"vuegolang/pkg/ctxpayload"
+	"vuegolang/pkg/authpayload"
+	"vuegolang/pkg/sessions"
 	"vuegolang/pkg/token"
+
+	"github.com/uptrace/bun"
+	"github.com/vektah/gqlparser/v2/gqlerror"
+	"golang.org/x/crypto/bcrypt"
 )
 
 // Login is the resolver for the login field.
-func (r *authOpsResolver) Login(
-	ctx context.Context,
-	obj *model.AuthOps,
-	login string,
-	password string,
-) (*model.AuthPayload, error) {
-	dbUser := models.User{}
-	errScan := r.Db.NewSelect().Model(&dbUser).Where("? = ?", bun.Ident("login"), login).Scan(ctx)
+func (r *mutationResolver) Login(ctx context.Context, login string, password string) (*model.AuthPayload, error) {
+	dbUser := dbmodels.User{}
+
+	errScan := r.Db.NewSelect().Model(&dbUser).Scan(ctx)
+
 	if errScan != nil {
 		log.Println(errScan.Error())
-		if dbUser == (models.User{}) {
+		if dbUser == (dbmodels.User{}) {
 			return nil, errors.New(wrongCredentials)
 		}
 		return nil, errScan
@@ -49,13 +48,20 @@ func (r *authOpsResolver) Login(
 	}
 
 	cookieValue, errToken := token.ToJsonString()
-	r.Sessions[cookieValue] = Session{PrivateKey: token.PrivateKey}
+	r.Sessions.Add(
+		cookieValue, &sessions.Session{
+			Id:         dbUser.ID,
+			PrivateKey: token.PrivateKey,
+			Login:      dbUser.Login,
+			Role:       model.Role(dbUser.Role),
+		},
+	)
 	if errToken != nil {
 		log.Printf("token stringify error: %v", errToken)
 		return nil, errors.New("internal error")
 	}
 
-	authInfo := &model.AuthInfo{Token: &cookieValue}
+	authInfo := &model.AuthInfo{Token: cookieValue}
 
 	// Создадим cookie
 	cookie := &http.Cookie{
@@ -65,19 +71,40 @@ func (r *authOpsResolver) Login(
 		Path:     "/",
 		SameSite: http.SameSiteLaxMode,
 	}
-	s := ctxpayload.FromContext(ctx)
+	s := authpayload.FromContext(ctx)
 	// Установим cookie
 	http.SetCookie(s.ResponseWriter, cookie)
 
 	return &model.AuthPayload{
-		User: &model.User{ID: fmt.Sprint(dbUser.ID), Login: dbUser.Login},
+		User: &model.User{ID: dbUser.ID, Login: dbUser.Login, Role: model.Role(dbUser.Role)},
 		Info: authInfo,
 	}, nil
 }
 
-// Auth is the resolver for the auth field.
-func (r *mutationResolver) Auth(ctx context.Context) (*model.AuthOps, error) {
-	return &model.AuthOps{}, nil
+// Validate is the resolver for the validate field.
+func (r *mutationResolver) Validate(ctx context.Context) (*model.User, error) {
+	var errDefault = &gqlerror.Error{Message: "Нет сессии"}
+	sessionKey, errToken := authpayload.GetSessionKeyFromContext(ctx)
+	if errToken != nil {
+		return nil, errDefault
+	}
+	data, ok := r.Sessions.Get(sessionKey)
+	if !ok {
+		return nil, errDefault
+	}
+	return &model.User{ID: data.Id, Login: data.Login, Role: data.Role}, nil
+}
+
+// Logout is the resolver for the logout field.
+func (r *mutationResolver) Logout(ctx context.Context, login string) (*string, error) {
+	var okMsg = "Ok"
+	sessionKey, errToken := authpayload.GetSessionKeyFromContext(ctx)
+	if errToken != nil {
+		log.Println("Get Token From Context error: ", errToken)
+		return nil, &gqlerror.Error{Message: "ошибка получения токена, пожалуйста, перелогиньтесь"}
+	}
+	r.Sessions.Remove(sessionKey)
+	return &okMsg, nil
 }
 
 // Me is the resolver for the me field.
@@ -85,13 +112,26 @@ func (r *queryResolver) Me(ctx context.Context, login string) (*model.User, erro
 	dbUser := model.User{}
 	errScan := r.Db.NewSelect().Model(&dbUser).Where("? = ?", bun.Ident("login"), login).Scan(ctx)
 	if errScan != nil {
-		return nil, errScan
+		log.Println(errScan)
+		return nil, &gqlerror.Error{Message: "internal error"}
 	}
 	return &dbUser, nil
 }
 
-// AuthOps returns AuthOpsResolver implementation.
-func (r *Resolver) AuthOps() AuthOpsResolver { return &authOpsResolver{r} }
+// Users is the resolver for the users field.
+func (r *queryResolver) Users(ctx context.Context) ([]*model.User, error) {
+	dbUsers := []*model.User{}
+	query := r.Db.NewSelect().Model(&dbUsers)
+	// .ColumnExpr(
+	// 	"\"user\".id, \"user\".login, myroles.name as Role",
+	// ).Join("JOIN roles as myroles ON myroles.id = \"user\".\"role\"")
+	errScan := query.Scan(ctx)
+	if errScan != nil {
+		log.Println(errScan)
+		return nil, &gqlerror.Error{Message: "internal error"}
+	}
+	return dbUsers, nil
+}
 
 // Mutation returns MutationResolver implementation.
 func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
@@ -99,6 +139,5 @@ func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
 // Query returns QueryResolver implementation.
 func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 
-type authOpsResolver struct{ *Resolver }
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }

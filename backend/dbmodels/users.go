@@ -1,4 +1,4 @@
-package models
+package dbmodels
 
 import (
 	"github.com/uptrace/bun"
@@ -7,7 +7,8 @@ import (
 type User struct {
 	bun.BaseModel
 
-	ID       int    `bun:"id,pk,autoincrement"`
+	ID       string `bun:"id,pk,autoincrement"`
 	Login    string `bun:"login,notnull"`
 	Password string `bun:"password,notnull"`
+	Role     string `bun:"role,notnull"`
 }
