@@ -16,5 +16,6 @@ func InitDb() *bun.DB {
 	sqldb := sql.OpenDB(pgdriver.NewConnector(pgdriver.WithDSN(*dbConnectionStr)))
 
 	db := bun.NewDB(sqldb, pgdialect.New())
+
 	return db
 }

@@ -1,9 +1,8 @@
 package graph
 
 import (
-	"crypto/rsa"
-
 	"github.com/uptrace/bun"
+	"vuegolang/pkg/sessions"
 )
 
 //go:generate go run github.com/99designs/gqlgen generate
@@ -12,13 +11,7 @@ import (
 //
 // It serves as dependency injection for your app, add any dependencies you require here.
 
-type Session struct {
-	PrivateKey rsa.PrivateKey
-}
-
-type Sessions map[string]Session
-
 type Resolver struct {
-	Db *bun.DB
-	Sessions
+	Db       *bun.DB
+	Sessions sessions.Interface
 }

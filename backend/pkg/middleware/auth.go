@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"vuegolang/graph/model"
-	"vuegolang/pkg/ctxpayload"
+	"vuegolang/pkg/authpayload"
 )
 
 type HandleAuthHTTPFunc func(w http.ResponseWriter, r *http.Request) (*http.Request, error)
@@ -30,18 +30,18 @@ func AuthMiddleware(HandleAuthHTTP HandleAuthHTTPFunc) func(http.Handler) http.H
 // Обрабатывает сессию клиента
 func SessionHandleClient(w http.ResponseWriter, r *http.Request) (*http.Request, error) {
 	var (
-		payload = ctxpayload.Auth{ResponseWriter: w, Request: *r}
+		payload = authpayload.Auth{ResponseWriter: w, Request: *r}
 		ctx     = r.Context()
 		auth    = model.AuthInfo{}
 	)
 	// Получим контекст
-	cookie, errCookie := r.Cookie(ctxpayload.CookieName)
+	cookie, errCookie := r.Cookie(authpayload.CookieName)
 	if errCookie != nil {
 		log.Printf("Cookie retrieval error: ", errCookie.Error())
 		return r.WithContext(payload.WithContext(ctx)), nil
 	}
 
-	auth.Token = &cookie.Value
+	auth.Token = cookie.Value
 
 	payload.AuthInfo = auth
 	ctx = payload.WithContext(ctx)

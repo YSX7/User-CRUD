@@ -22,12 +22,12 @@ type Token struct {
 }
 
 type Claims struct {
-	Id      int
+	Id      string
 	Expired int64
 }
 
 // New маршализирует клаймсы, шифрует их и возвращает их вместе с приватным ключом и сроком годности
-func New(id int) (Token, error) {
+func New(id string) (Token, error) {
 	t := Token{}
 	expireUnix := time.Now().AddDate(1, 0, 0)
 	claims := Claims{
@@ -134,7 +134,7 @@ func DecryptOAEP(hash hash.Hash, random io.Reader, private *rsa.PrivateKey, msg 
 func (t *Token) ToJsonString() (string, error) {
 	tokenStr := t.Value
 
-	authInfo := &model.AuthInfo{Token: &tokenStr}
+	authInfo := &model.AuthInfo{Token: tokenStr}
 	b, errJson := json.Marshal(authInfo)
 	if errJson != nil {
 		return "", errJson
@@ -157,5 +157,5 @@ func FromJsonString(str string) (string, error) {
 		return "", err
 	}
 
-	return *authInfo.Token, nil
+	return authInfo.Token, nil
 }
