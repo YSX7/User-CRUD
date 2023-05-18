@@ -5,8 +5,10 @@ module.exports = {
     service: {
       name: 'my-service',
       URL: 'http://localhost:8080/query',
+      skipSSLValidation: true,
     },
     // Files processed by the extension
     includes: ['src/**/*.vue', 'src/**/*.js', 'src/**/*.ts'],
+    
   },
 }

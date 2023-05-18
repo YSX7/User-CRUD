@@ -1,38 +1,48 @@
-import { useApolloClient } from '@vue/apollo-composable';
+import { provideApolloClient, useApolloClient } from '@vue/apollo-composable';
 import { defineStore } from 'pinia';
 import { Role, User } from 'src/gql/graphql';
 import gql from 'graphql-tag';
+import { ref } from 'vue';
+import { getDefaultApolloClient } from 'src/boot/apollo';
+import { Mutation } from 'src/gql/graphql';
 
-interface State {
-  IsLogged: boolean
-  Role?: Role
-}
+export const useUserStore = defineStore('user', () => {
+  const IsLogged = ref<boolean>();
+  const Role = ref<Role>();
 
-export const useUserStore = defineStore('user',
- {
-  state: () : State => {
-    const { resolveClient } = useApolloClient<User>()
+  async function Init(): Promise<boolean> {
+    let response;
+    provideApolloClient(getDefaultApolloClient())
+
+    const { resolveClient } = useApolloClient<Mutation>()
     const client = resolveClient()
-    const response = await client.mutate<User>({mutation: gql`mutation Mutation{
+    try {
+      response = await client.mutate<Mutation>({
+        mutation: gql`mutation Mutation{
       validate{
         id
         login
         role
       }
     }`})
-    return {
-      IsLogged: true,
-      Role: response.data?.role
+    } catch (e) {
+      console.log('not logged')
+      IsLogged.value = false;
+      return false
     }
-  },
-  actions: {
-    Login(role: Role) {
-      this.IsLogged = true;
-      this.Role = role;
-    },
-    Logout(){
-      this.IsLogged = false;
-      this.Role = undefined;
-    },
-  },
+    IsLogged.value = true;
+    Role.value = response.data?.validate?.role;
+    return true
+  }
+
+  function Login(role: Role) {
+    IsLogged.value = true;
+    Role.value = role
+  }
+  function Logout() {
+    IsLogged.value = false;
+    Role.value = undefined;
+  }
+
+  return { IsLogged, Role, Login, Logout, Init }
 });

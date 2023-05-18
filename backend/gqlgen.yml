@@ -12,7 +12,7 @@ exec:
 #   filename: graph/federation.go
 #   package: graph
 
-# Where should any generated models go?
+# Where should any generated dbmodels go?
 model:
   filename: graph/model/models_gen.go
   package: model
@@ -23,17 +23,17 @@ resolver:
   dir: graph
   package: graph
 
-# Optional: turn on use ` + "`" + `gqlgen:"fieldName"` + "`" + ` tags in your models
+# Optional: turn on use ` + "`" + `gqlgen:"fieldName"` + "`" + ` tags in your dbmodels
 # struct_tag: json
 
 # Optional: turn on to use []Thing instead of []*Thing
 # omit_slice_element_pointers: false
 
-# Optional: turn off to make struct-type struct fields not use pointers
+# Optional: turn off to Makefile struct-type struct fields not use pointers
 # e.g. type Thing struct { FieldA OtherThing } instead of { FieldA *OtherThing }
 # struct_fields_always_pointers: true
 
-# Optional: turn off to make resolvers return values instead of pointers for structs
+# Optional: turn off to Makefile resolvers return values instead of pointers for structs
 # resolvers_always_return_pointers: true
 
 # Optional: set to speed up generation time by not performing a final validation pass.
