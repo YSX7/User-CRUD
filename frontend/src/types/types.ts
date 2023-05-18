@@ -5,14 +5,15 @@ export type UserField<T> = {
     value: T
 }
 
-//export const UserDataKeys: Array<keyof User> = ['login', 'role']
+export type UserDataKey = Omit<User,'__typename' | 'id'>
 
-export type UserDataKey = Omit<User,'__typename'>
-
-export type UserDataFields = {[K in keyof UserDataKey]?: UserField<User[K]>};
+export type UserDataFields = Record<keyof UserDataKey, UserField<User[keyof UserDataKey]>>;
 
 export type UserData = {
+    id: string
     fields: UserDataFields
     isNew: boolean
     isDelete: boolean 
 }
+
+//Get all fields from User, that exists on UserDataFields, and pass data to UserDataFields from User

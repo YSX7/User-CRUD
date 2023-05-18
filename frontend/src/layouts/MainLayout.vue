@@ -15,7 +15,7 @@
           Quasar App
         </q-toolbar-title>
 
-        <div>Quasar v{{ $q.version }}</div>
+        <AuthButton/>
       </q-toolbar>
     </q-header>
 
@@ -48,19 +48,18 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import EssentialLink, { EssentialLinkProps } from 'components/EssentialLink.vue';
+import AuthButton from 'src/components/AuthButton.vue';
 
 const essentialLinks: EssentialLinkProps[] = [
   {
-    title: 'Home',
-    caption: 'quasar.dev',
-    icon: 'school',
+    title: 'Домой',
+    icon: 'home',
     link: '/'
   },
   {
-    title: 'Redirect',
-    caption: 'github.com/quasarframework',
-    icon: 'code',
-    link: '/#/redirectBeach'
+    title: 'Пользователи',
+    icon: 'people',
+    link: '/users'
   },
   {
     title: 'Discord Chat Channel',
