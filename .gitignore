@@ -5,3 +5,9 @@ proto/
 buf/
 frontend/package-lock.json
 frontend/.vscode/
+frontend/src/gql/gql.ts
+frontend/src/gql/graphql.ts
+frontend/src/gql/index.ts
+frontend/src/router/routes.ts
+data
+/frontend/src/gql/*
