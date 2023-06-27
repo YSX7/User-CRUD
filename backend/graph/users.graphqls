@@ -12,5 +12,5 @@ input UpdateUserInput{
 extend type Mutation{
     userNew(users: [NewUserInput!]!): [User!]! @auth
     userUpdate(users: [UpdateUserInput!]!): [User!]! @auth
-    userDelete(users: [ID!]!): [ID!]! @auth
+    userDelete(users: [ID!]!): Int @auth
 }

@@ -7,7 +7,7 @@ import (
 )
 
 type Session struct {
-	Id    string
+	Id    int
 	Login string
 	model.Role
 	PrivateKey rsa.PrivateKey

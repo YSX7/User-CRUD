@@ -22,12 +22,12 @@ type Token struct {
 }
 
 type Claims struct {
-	Id      string
+	Id      int
 	Expired int64
 }
 
 // New маршализирует клаймсы, шифрует их и возвращает их вместе с приватным ключом и сроком годности
-func New(id string) (Token, error) {
+func New(id int) (Token, error) {
 	t := Token{}
 	expireUnix := time.Now().AddDate(1, 0, 0)
 	claims := Claims{

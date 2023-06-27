@@ -1,7 +1,7 @@
 <template>
   <q-page class="q-mt-lg">
     <div class="column q-gutter-lg items-center justify-start">
-      <ButtonSave  v-model:save-data="rows"></ButtonSave>
+      <ButtonSave v-model:save-data="rows" @update:save-data="onSaved"></ButtonSave>
       <q-table bordered title="Пользователи" :columns="columns" :rows="rows" :loading="isLoading" table-class="table"
         :table-style="{ borderCollapse: 'collapse' }" :pagination="{rowsPerPage: 10}">
         <template v-slot:top>
@@ -39,6 +39,7 @@
 import { useApolloClient, useMutation } from '@vue/apollo-composable';
 import gql from 'graphql-tag';
 import { Notify } from 'quasar';
+import axios from 'axios';
 import ButtonSave from 'src/components/users/ButtonSave.vue';
 import { Query, Role, User } from 'src/gql/graphql';
 import { UserData, UserDataFields, UserField, UserDataKey } from 'src/types/types';
@@ -174,7 +175,8 @@ function fakeRule() {
 }
 
 function onSaved(n:User[]){
-  console.log(n)
+  console.dir(n)
+  console.dir(rows.value)
 }
 
 </script>

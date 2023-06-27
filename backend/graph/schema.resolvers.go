@@ -9,7 +9,7 @@ import (
 	"errors"
 	"log"
 	"net/http"
-
+	"strconv"
 	"vuegolang/dbmodels"
 	"vuegolang/graph/model"
 	"vuegolang/pkg/authpayload"
@@ -75,8 +75,9 @@ func (r *mutationResolver) Login(ctx context.Context, login string, password str
 	// Установим cookie
 	http.SetCookie(s.ResponseWriter, cookie)
 
+	id := strconv.Itoa(dbUser.ID)
 	return &model.AuthPayload{
-		User: &model.User{ID: dbUser.ID, Login: dbUser.Login, Role: model.Role(dbUser.Role)},
+		User: &model.User{ID: id, Login: dbUser.Login, Role: model.Role(dbUser.Role)},
 		Info: authInfo,
 	}, nil
 }
@@ -92,7 +93,8 @@ func (r *mutationResolver) Validate(ctx context.Context) (*model.User, error) {
 	if !ok {
 		return nil, errDefault
 	}
-	return &model.User{ID: data.Id, Login: data.Login, Role: data.Role}, nil
+	id := strconv.Itoa(data.Id)
+	return &model.User{ID: id, Login: data.Login, Role: data.Role}, nil
 }
 
 // Logout is the resolver for the logout field.

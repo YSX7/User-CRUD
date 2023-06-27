@@ -6,19 +6,30 @@ package graph
 
 import (
 	"context"
-	"fmt"
 	"log"
+	"strconv"
 
-	"github.com/vektah/gqlparser/v2/gqlerror"
 	"vuegolang/dbmodels"
 	"vuegolang/graph/model"
+
+	"github.com/vektah/gqlparser/v2/gqlerror"
 )
+
+func parseDbData(dbusers []dbmodels.User) (outputData []*model.User) {
+	outputData = make([]*model.User, len(dbusers))
+
+	for i, user := range dbusers {
+		id := strconv.Itoa(user.ID)
+		outputData[i] = &model.User{id, user.Login, model.Role(user.Role)}
+	}
+
+	return
+}
 
 // UserNew is the resolver for the userNew field.
 func (r *mutationResolver) UserNew(ctx context.Context, users []*model.NewUserInput) ([]*model.User, error) {
 	var (
-		usersData  = make([]dbmodels.User, len(users))
-		outputData = make([]*model.User, len(users))
+		usersData = make([]dbmodels.User, len(users))
 	)
 	for i, v := range users {
 		usersData[i] = dbmodels.User{Login: v.Login, Password: "test", Role: v.Role.String()}
@@ -26,23 +37,64 @@ func (r *mutationResolver) UserNew(ctx context.Context, users []*model.NewUserIn
 
 	_, err := r.Db.NewInsert().Model(&usersData).Exec(ctx)
 	if err != nil {
-		log.Printf("DB new user insert error: %v", err)
+		log.Printf("DB new user insert: %v", err)
 		return nil, &gqlerror.Error{Message: "Ошибка добавления"}
 	}
 
-	for i, user := range usersData {
-		outputData[i] = &model.User{user.ID, user.Login, model.Role(user.Role)}
-	}
+	outputData := parseDbData(usersData)
 
 	return outputData, nil
 }
 
 // UserUpdate is the resolver for the userUpdate field.
 func (r *mutationResolver) UserUpdate(ctx context.Context, users []*model.UpdateUserInput) ([]*model.User, error) {
-	panic(fmt.Errorf("not implemented: UserUpdate - userUpdate"))
+	var (
+		usersData = make(
+			[]dbmodels.User, len(users),
+		)
+	)
+
+	for i, v := range users {
+		id, _ := strconv.Atoi(v.ID)
+		usersData[i] = dbmodels.User{ID: id, Login: v.Login, Role: v.Role.String()}
+	}
+
+	_, err := r.Db.NewUpdate().
+		Model(&usersData).
+		Column("login", "role").
+		Bulk().
+		Exec(ctx)
+	if err != nil {
+		log.Printf("DB update: %v", err)
+		return nil, &gqlerror.Error{Message: "Ошибка обновления"}
+	}
+
+	outputData := parseDbData(usersData)
+
+	return outputData, nil
 }
 
 // UserDelete is the resolver for the userDelete field.
-func (r *mutationResolver) UserDelete(ctx context.Context, users []string) ([]string, error) {
-	panic(fmt.Errorf("not implemented: UserDelete - userDelete"))
+func (r *mutationResolver) UserDelete(ctx context.Context, users []string) (*int, error) {
+	var (
+		usersData = make(
+			[]dbmodels.User, len(users),
+		)
+	)
+
+	for i, v := range users {
+		id, _ := strconv.Atoi(v)
+		usersData[i] = dbmodels.User{ID: id}
+	}
+
+	res, err := r.Db.NewDelete().Model(&usersData).WherePK().Exec(ctx)
+	if err != nil {
+		log.Printf("DB update: %v", err)
+		return nil, &gqlerror.Error{Message: "Ошибка обновления"}
+	}
+
+	rowsAffected, _ := res.RowsAffected()
+	intRowsAffected := int(rowsAffected)
+
+	return &intRowsAffected, nil
 }
